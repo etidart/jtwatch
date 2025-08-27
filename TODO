@@ -1,0 +1,8 @@
+filter for season (should update right when value changed, not only on button press)
+range filter for quality with default >=720 (comment same as l.1)
+
+finally, torrserver's menu for each torrent. in that menu should be displayed infohash with magnet link, then files
+additionally, ability to manually enter infohash/magnet and open menu for that
+
+lastly searched string should be saved in cookies.
+lastly opened torrent should be saved in cookies and automatically placed in l.5's input field.

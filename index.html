@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>jtwatch</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <header>
+      <div class="app-title">
+        <span>jtwatch</span>
+      </div>
+    </header>
+
+    <div class="container">
+      <div class="status-info">
+        <p>
+          <strong>jackett:</strong>
+          <span id="jackettLink" class="link">http://localhost:9117</span>
+          <span>-----</span>
+          <strong id="jackettStatus">/</strong>
+        </p>
+        <p>
+          <strong>torrserver:</strong>
+          <span id="torrserverLink" class="link">http://localhost:8090</span>
+          <span>-----</span>
+          <strong id="torrserverStatus">/</strong>
+        </p>
+      </div>
+
+      <div class="card">
+        <h2 class="card-title">search</h2>
+        <div class="form-group">
+          <label for="searchQuery">query</label>
+          <input
+            type="text"
+            id="searchQuery"
+            placeholder="name / kpXXXXXX / ttXXXXXX"
+          />
+          <div class="slider-wrapper">
+            <div class="slider-track"></div>
+            <div class="slider-range" id="sliderRange"></div>
+
+            <div class="slider-marker" style="left: 0%"></div>
+            <div class="slider-marker" style="left: 33.33%"></div>
+            <div class="slider-marker" style="left: 66.66%"></div>
+            <div class="slider-marker" style="left: 100%"></div>
+
+            <div class="slider-label" style="left: 0%">480</div>
+            <div class="slider-label" style="left: 33.33%">720</div>
+            <div class="slider-label" style="left: 66.66%">1080</div>
+            <div class="slider-label" style="left: 100%">2160</div>
+
+            <div class="slider-handle min-handle" id="minHandle"></div>
+            <div class="slider-handle max-handle" id="maxHandle"></div>
+          </div>
+        </div>
+        <button id="searchButton">search</button>
+      </div>
+
+      <div class="card hidden" id="resultsCard">
+        <h2 class="card-title">search results</h2>
+        <div class="results-container" id="torrentResults">
+          <!-- results will be displayed here -->
+        </div>
+      </div>
+    </div>
+
+    <script src="script.js"></script>
+  </body>
+</html>
