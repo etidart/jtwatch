@@ -225,7 +225,7 @@ span:nth-child(5) {
 
   position: relative;
   display: grid;
-  width: 50%;
+  width: 90%;
 }
 
 .range-input {
@@ -308,9 +308,36 @@ option::after {
   z-index: 1;
 }
 
+.addit-options {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  margin-top: 20px;
+}
+
+#seasonInput {
+  width: 100px;
+  padding: 12px;
+  background: #2a2a2a;
+  color: var(--text-primary);
+  border: 1px solid #444;
+  border-radius: var(--border-radius);
+  font-size: 1rem;
+  transition: var(--transition);
+}
+
+#seasonInput:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(255, 56, 96, 0.2);
+}
+
 @media (width < 768px) {
   .app-title {
     font-size: 1.5rem;
+  }
+
+  .addit-options {
+    grid-template-columns: 1fr;
   }
 
   /*.torrent-details {

@@ -17,6 +17,7 @@ document.addEventListener("DOMContentLoaded", function () {
     pir: number;
     magnet: string;
     quality: number;
+    seasons: number[];
   };
 
   type TorrFile = {
@@ -26,60 +27,117 @@ document.addEventListener("DOMContentLoaded", function () {
 
   type TorrDirs = Array<TorrFile | [string, TorrDirs]>;
 
-  class DoubleRange {
-    private options = [480, 720, 1080, 2160];
+  class Filters {
+    private static DoubleRange = class {
+      private parent: Filters;
 
-    private min: number = this.options[1];
-    private max: number = this.options[3];
+      private options = [480, 720, 1080, 2160];
 
-    private handleInputRange1(event: Event) {
-      const evTarg = event.target as HTMLInputElement;
-      const value2 = (
-        evTarg.parentNode!.parentNode! as HTMLDivElement
-      ).style.getPropertyValue("--value-2");
-      if (parseInt(evTarg.value) >= parseInt(value2)) {
-        evTarg.value = value2;
+      private min: number = this.options[1];
+      private max: number = this.options[3];
+
+      private handleInputRange1(event: Event) {
+        const evTarg = event.target as HTMLInputElement;
+        const value2 = (
+          evTarg.parentNode!.parentNode! as HTMLDivElement
+        ).style.getPropertyValue("--value-2");
+        if (parseInt(evTarg.value) >= parseInt(value2)) {
+          evTarg.value = value2;
+        }
+        if (evTarg.value === "3") {
+          evTarg.style.zIndex = "100";
+        } else {
+          evTarg.style.zIndex = "2";
+        }
+        (evTarg.parentNode!.parentNode! as HTMLDivElement).style.setProperty(
+          "--value-1",
+          evTarg.value
+        );
+        if (this.min !== this.options[parseInt(evTarg.value)]) {
+          this.min = this.options[parseInt(evTarg.value)];
+          this.parent.redraw();
+        }
       }
-      if (evTarg.value === "3") {
-        evTarg.style.zIndex = "100";
-      } else {
-        evTarg.style.zIndex = "2";
+
+      private handleInputRange2(event: Event) {
+        const evTarg = event.target as HTMLInputElement;
+        const value1 = (
+          evTarg.parentNode!.parentNode! as HTMLDivElement
+        ).style.getPropertyValue("--value-1");
+        if (parseInt(evTarg.value) <= parseInt(value1)) {
+          evTarg.value = value1;
+        }
+        if (evTarg.value === "0") {
+          evTarg.style.zIndex = "100";
+        } else {
+          evTarg.style.zIndex = "2";
+        }
+        (evTarg.parentNode!.parentNode! as HTMLDivElement).style.setProperty(
+          "--value-2",
+          evTarg.value
+        );
+        if (this.max !== this.options[parseInt(evTarg.value)]) {
+          this.max = this.options[parseInt(evTarg.value)];
+          this.parent.redraw();
+        }
       }
-      (evTarg.parentNode!.parentNode! as HTMLDivElement).style.setProperty(
-        "--value-1",
-        evTarg.value
-      );
-      this.min = this.options[parseInt(evTarg.value)];
+
+      public getminmax(): [number, number] {
+        return [this.min, this.max];
+      }
+
+      constructor(parent: Filters) {
+        this.parent = parent;
+        const range1 = document.getElementById(
+          "rangeHand1"
+        )! as HTMLInputElement;
+        range1.addEventListener("input", (ev) => this.handleInputRange1(ev));
+
+        const range2 = document.getElementById(
+          "rangeHand2"
+        )! as HTMLInputElement;
+        range2.addEventListener("input", (ev) => this.handleInputRange2(ev));
+      }
+    };
+
+    private currArrayState: TorrInfo[] | null = null;
+
+    private drange: InstanceType<typeof Filters.DoubleRange>;
+    private season: HTMLInputElement;
+
+    public filter(array: TorrInfo[]): TorrInfo[] {
+      if (this.currArrayState !== array) {
+        this.currArrayState = array;
+      }
+      return array.filter((tinfo) => {
+        // filter by quality
+        const [minQ, maxQ] = this.drange.getminmax();
+        if (!(tinfo.quality >= minQ && tinfo.quality <= maxQ)) {
+          return false;
+        }
+        // filter by season
+        if (this.season.value === "") {
+          return true;
+        }
+        return tinfo.seasons.includes(parseInt(this.season.value));
+      });
     }
-    private handleInputRange2(event: Event) {
-      const evTarg = event.target as HTMLInputElement;
-      const value1 = (
-        evTarg.parentNode!.parentNode! as HTMLDivElement
-      ).style.getPropertyValue("--value-1");
-      if (parseInt(evTarg.value) <= parseInt(value1)) {
-        evTarg.value = value1;
+
+    private redraw() {
+      if (this.currArrayState === null) {
+        return;
       }
-      if (evTarg.value === "0") {
-        evTarg.style.zIndex = "100";
-      } else {
-        evTarg.style.zIndex = "2";
-      }
-      (evTarg.parentNode!.parentNode! as HTMLDivElement).style.setProperty(
-        "--value-2",
-        evTarg.value
-      );
-      this.max = this.options[parseInt(evTarg.value)];
+      drawResults(this.filter(this.currArrayState));
     }
+
     constructor() {
-      const range1 = document.getElementById("rangeHand1")! as HTMLInputElement;
-      range1.addEventListener("input", this.handleInputRange1);
-
-      const range2 = document.getElementById("rangeHand2")! as HTMLInputElement;
-      range2.addEventListener("input", this.handleInputRange2);
+      this.drange = new Filters.DoubleRange(this);
+      this.season = document.getElementById("seasonInput") as HTMLInputElement;
+      this.season.addEventListener("input", () => this.redraw());
     }
   }
 
-  new DoubleRange();
+  const filters = new Filters();
 
   document.getElementById("jackettLink")!.textContent = JACKETT_URL;
   document.getElementById("torrserverLink")!.textContent = TORRSERVER_URL;
@@ -144,37 +202,40 @@ document.addEventListener("DOMContentLoaded", function () {
     stStatus.style = "color: green";
   }
 
-  async function searchDisplay(query: string) {
-    try {
-      const results = await requestJackAPI(query);
+  function drawResults(array: TorrInfo[]) {
+    torrentResults.innerHTML = "";
 
-      torrentResults.innerHTML = "";
+    if (array.length == 0) {
+      torrentResults.innerHTML =
+        '<div class="loading"><p>nothing found</p></div>';
+      return;
+    }
 
-      if (results.length == 0) {
-        torrentResults.innerHTML =
-          '<div class="loading"><p>nothing found</p></div>';
-        return;
-      }
-
-      results.forEach((result) => {
-        const torrElem = document.createElement("div");
-        torrElem.className = "torrent-item fade-in";
-        torrElem.innerHTML = `
+    array.forEach((result) => {
+      const torrElem = document.createElement("div");
+      torrElem.className = "torrent-item fade-in";
+      torrElem.innerHTML = `
         <div class="torrent-title">${result.title}</div>
         <div class="torrent-details">
           <span>${result.sizeName}</span>
           <span style="text-align: center;">&uarr; ${result.sid} | &darr; ${
-          result.pir
-        }</span>
+        result.pir
+      }</span>
           <span style="text-align: right;">${result.quality}P</span>
           <span>${result.tracker}</span>
           <span style="text-align: right;">${result.createTime.toDateString()}</span>
         </div>`;
 
-        //torrElem.addEventListener("click", () => {});
+      //torrElem.addEventListener("click", () => {});
 
-        torrentResults.appendChild(torrElem);
-      });
+      torrentResults.appendChild(torrElem);
+    });
+  }
+
+  async function searchDisplay(query: string) {
+    try {
+      const results = await requestJackAPI(query);
+      drawResults(filters.filter(results));
     } catch (error) {
       let msg: string;
       if (error instanceof Error) {
@@ -212,6 +273,7 @@ document.addEventListener("DOMContentLoaded", function () {
           pir: number;
           magnet: string;
           quality: number;
+          seasons: number[];
         }>
       )
         .map(
@@ -225,6 +287,7 @@ document.addEventListener("DOMContentLoaded", function () {
             pir,
             magnet,
             quality,
+            seasons,
           }) => ({
             tracker,
             url,
@@ -235,6 +298,7 @@ document.addEventListener("DOMContentLoaded", function () {
             pir,
             magnet,
             quality,
+            seasons,
           })
         )
         .sort((a, b) => b.sid - a.sid); // reverse order of sorting -> more seeds - upper in the list
