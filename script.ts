@@ -26,6 +26,61 @@ document.addEventListener("DOMContentLoaded", function () {
 
   type TorrDirs = Array<TorrFile | [string, TorrDirs]>;
 
+  class DoubleRange {
+    private options = [480, 720, 1080, 2160];
+
+    private min: number = this.options[1];
+    private max: number = this.options[3];
+
+    private handleInputRange1(event: Event) {
+      const evTarg = event.target as HTMLInputElement;
+      const value2 = (
+        evTarg.parentNode!.parentNode! as HTMLDivElement
+      ).style.getPropertyValue("--value-2");
+      if (parseInt(evTarg.value) >= parseInt(value2)) {
+        evTarg.value = value2;
+      }
+      if (evTarg.value === "3") {
+        evTarg.style.zIndex = "100";
+      } else {
+        evTarg.style.zIndex = "2";
+      }
+      (evTarg.parentNode!.parentNode! as HTMLDivElement).style.setProperty(
+        "--value-1",
+        evTarg.value
+      );
+      this.min = this.options[parseInt(evTarg.value)];
+    }
+    private handleInputRange2(event: Event) {
+      const evTarg = event.target as HTMLInputElement;
+      const value1 = (
+        evTarg.parentNode!.parentNode! as HTMLDivElement
+      ).style.getPropertyValue("--value-1");
+      if (parseInt(evTarg.value) <= parseInt(value1)) {
+        evTarg.value = value1;
+      }
+      if (evTarg.value === "0") {
+        evTarg.style.zIndex = "100";
+      } else {
+        evTarg.style.zIndex = "2";
+      }
+      (evTarg.parentNode!.parentNode! as HTMLDivElement).style.setProperty(
+        "--value-2",
+        evTarg.value
+      );
+      this.max = this.options[parseInt(evTarg.value)];
+    }
+    constructor() {
+      const range1 = document.getElementById("rangeHand1")! as HTMLInputElement;
+      range1.addEventListener("input", this.handleInputRange1);
+
+      const range2 = document.getElementById("rangeHand2")! as HTMLInputElement;
+      range2.addEventListener("input", this.handleInputRange2);
+    }
+  }
+
+  new DoubleRange();
+
   document.getElementById("jackettLink")!.textContent = JACKETT_URL;
   document.getElementById("torrserverLink")!.textContent = TORRSERVER_URL;
 

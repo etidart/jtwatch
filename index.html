@@ -38,22 +38,52 @@
             id="searchQuery"
             placeholder="name / kpXXXXXX / ttXXXXXX"
           />
-          <div class="slider-wrapper">
-            <div class="slider-track"></div>
-            <div class="slider-range" id="sliderRange"></div>
+          <div class="addit-options">
+            <div>
+              <label for="rangeHand1">quality</label>
+              <div class="slider-wrapper" style="--value-1: 1; --value-2: 3">
+                <div class="slider-track"></div>
+                <div class="slider-range"></div>
 
-            <div class="slider-marker" style="left: 0%"></div>
-            <div class="slider-marker" style="left: 33.33%"></div>
-            <div class="slider-marker" style="left: 66.66%"></div>
-            <div class="slider-marker" style="left: 100%"></div>
+                <div class="thumbs">
+                  <input
+                    class="range-input"
+                    type="range"
+                    id="rangeHand1"
+                    min="0"
+                    max="3"
+                    value="1"
+                    step="1"
+                    aria-valuemin="0"
+                    aria-valuemax="3"
+                    aria-orientation="horizontal"
+                    list="tickmarks"
+                    style="z-index: 2"
+                  />
+                  <input
+                    class="range-input"
+                    type="range"
+                    id="rangeHand2"
+                    min="0"
+                    max="3"
+                    value="3"
+                    step="1"
+                    aria-valuemin="0"
+                    aria-valuemax="3"
+                    aria-orientation="horizontal"
+                    list="tickmarks"
+                    style="z-index: 2"
+                  />
+                </div>
 
-            <div class="slider-label" style="left: 0%">480</div>
-            <div class="slider-label" style="left: 33.33%">720</div>
-            <div class="slider-label" style="left: 66.66%">1080</div>
-            <div class="slider-label" style="left: 100%">2160</div>
-
-            <div class="slider-handle min-handle" id="minHandle"></div>
-            <div class="slider-handle max-handle" id="maxHandle"></div>
+                <datalist id="tickmarks" class="tickmarks">
+                  <option>480</option>
+                  <option>720</option>
+                  <option>1080</option>
+                  <option>2160</option>
+                </datalist>
+              </div>
+            </div>
           </div>
         </div>
         <button id="searchButton">search</button>
