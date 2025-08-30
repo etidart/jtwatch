@@ -30,67 +30,70 @@
       </div>
 
       <div class="card">
-        <h2 class="card-title">search</h2>
-        <div class="form-group">
-          <label for="searchQuery">query</label>
-          <input
-            type="text"
-            id="searchQuery"
-            placeholder="name / kpXXXXXX / ttXXXXXX"
-          />
-          <div class="addit-options">
-            <div>
-              <label for="rangeHand1">quality</label>
-              <div class="slider-wrapper" style="--value-1: 1; --value-2: 3">
-                <div class="slider-track"></div>
-                <div class="slider-range"></div>
+        <form method="dialog">
+          <h2 class="card-title">search</h2>
+          <div class="form-group">
+            <label for="searchQuery">query</label>
+            <input
+              type="text"
+              id="searchQuery"
+              placeholder="name / kpXXXXXX / ttXXXXXX"
+              required
+            />
+            <div class="addit-options">
+              <div>
+                <label for="rangeHand1">quality</label>
+                <div class="slider-wrapper" style="--value-1: 1; --value-2: 3">
+                  <div class="slider-track"></div>
+                  <div class="slider-range"></div>
 
-                <div class="thumbs">
-                  <input
-                    class="range-input"
-                    type="range"
-                    id="rangeHand1"
-                    min="0"
-                    max="3"
-                    value="1"
-                    step="1"
-                    aria-valuemin="0"
-                    aria-valuemax="3"
-                    aria-orientation="horizontal"
-                    list="tickmarks"
-                    style="z-index: 2"
-                  />
-                  <input
-                    class="range-input"
-                    type="range"
-                    id="rangeHand2"
-                    min="0"
-                    max="3"
-                    value="3"
-                    step="1"
-                    aria-valuemin="0"
-                    aria-valuemax="3"
-                    aria-orientation="horizontal"
-                    list="tickmarks"
-                    style="z-index: 2"
-                  />
+                  <div class="thumbs">
+                    <input
+                      class="range-input"
+                      type="range"
+                      id="rangeHand1"
+                      min="0"
+                      max="3"
+                      value="1"
+                      step="1"
+                      aria-valuemin="0"
+                      aria-valuemax="3"
+                      aria-orientation="horizontal"
+                      list="tickmarks"
+                      style="z-index: 2"
+                    />
+                    <input
+                      class="range-input"
+                      type="range"
+                      id="rangeHand2"
+                      min="0"
+                      max="3"
+                      value="3"
+                      step="1"
+                      aria-valuemin="0"
+                      aria-valuemax="3"
+                      aria-orientation="horizontal"
+                      list="tickmarks"
+                      style="z-index: 2"
+                    />
+                  </div>
+
+                  <datalist id="tickmarks" class="tickmarks">
+                    <option>480</option>
+                    <option>720</option>
+                    <option>1080</option>
+                    <option>2160</option>
+                  </datalist>
                 </div>
-
-                <datalist id="tickmarks" class="tickmarks">
-                  <option>480</option>
-                  <option>720</option>
-                  <option>1080</option>
-                  <option>2160</option>
-                </datalist>
+              </div>
+              <div>
+                <label for="seasonInput">season</label>
+                <input type="number" id="seasonInput" min="0" />
               </div>
             </div>
-            <div>
-              <label for="seasonInput">season</label>
-              <input type="number" id="seasonInput" min="0" />
-            </div>
           </div>
-        </div>
-        <button id="searchButton">search</button>
+          <button id="searchButton">search</button>
+        </form>
       </div>
 
       <div class="card hidden" id="resultsCard">
@@ -100,6 +103,23 @@
         </div>
       </div>
     </div>
+
+    <dialog id="dialogInfo">
+      <form method="dialog">
+        <button class="close-button"></button>
+      </form>
+      <h2>torrent info</h2>
+      <label for="dialogName">name</label>
+      <input type="text" id="dialogName" readonly />
+      <label for="dialogMagnet">magnet</label>
+      <input type="text" id="dialogMagnet" readonly />
+      <label for="dialogHash">infohash</label>
+      <input type="text" id="dialogHash" readonly />
+      <h3>files</h3>
+      <div class="directory-structure" id="dialogFiles">
+        <!-- results will be displayed here -->>
+      </div>
+    </dialog>
 
     <script src="script.js"></script>
   </body>

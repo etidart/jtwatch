@@ -1,5 +1,4 @@
-finally, torrserver's menu for each torrent. in that menu should be displayed infohash with magnet link, then files
 additionally, ability to manually enter infohash/magnet and open menu for that
 
-lastly searched string and options should be saved in cookies.
-lastly opened torrent should be saved in cookies and automatically placed in l.2's input field.
+lastly searched string should be saved in cookies.
+lastly opened torrent's magnet link should be saved in cookies and automatically placed in l.1's input field.

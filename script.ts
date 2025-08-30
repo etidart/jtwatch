@@ -139,6 +139,118 @@ document.addEventListener("DOMContentLoaded", function () {
 
   const filters = new Filters();
 
+  class Dialog {
+    private readonly self: HTMLDialogElement;
+    private readonly name: HTMLInputElement;
+    private readonly magnet: HTMLInputElement;
+    private readonly infohash: HTMLInputElement;
+    private readonly filesContainer: HTMLDivElement;
+
+    public async showTorrent(name: string, magnet: string) {
+      this.name.value = name === "" ? "loading.." : name;
+      this.magnet.value = magnet;
+
+      const match = magnet.match(
+        /^magnet:\?xt=urn:btih:([0-9a-fA-F]{40})(?:&dn=[^&]*|&tr=[^&]*|&xl=[0-9]+)*$/
+      );
+      if (!match) {
+        throw new Error("invalid magnet link");
+      }
+      this.infohash.value = match[1];
+
+      this.filesContainer.innerHTML = `<div class="loading">
+                                        <div class="load-spinner"></div>
+                                        <p>loading directory structure...</p>
+                                      </div>`;
+
+      this.self.showModal();
+
+      try {
+        const apiresp = await requestTorrAPI(magnet);
+        if (name === "") {
+          this.name.value = apiresp[0];
+        }
+        this.drawInfo(buildDirTorr(apiresp[1]), this.filesContainer);
+      } catch (error) {
+        console.error(error);
+        this.filesContainer.innerHTML = `<div class="loading">
+                                          <p>an error occurred. see logs</p>
+                                        </div>`;
+      }
+    }
+
+    private async drawInfo(dirs: TorrDirs, place: HTMLDivElement) {
+      place.innerHTML = "";
+
+      dirs.forEach((val) => {
+        if (Array.isArray(val)) {
+          const dirEl = document.createElement("div");
+          dirEl.className = "directory";
+
+          const togEl = document.createElement("span");
+          togEl.className = "toggle";
+          togEl.textContent = `▶ ${val[0]}`;
+
+          const contEl = document.createElement("div");
+          contEl.className = "hidden";
+          this.drawInfo(val[1], contEl);
+
+          togEl.addEventListener("click", () => {
+            contEl.classList.toggle("hidden");
+            togEl.textContent = contEl.classList.contains("hidden")
+              ? `▶ ${val[0]}`
+              : `▼ ${val[0]}`;
+          });
+
+          dirEl.appendChild(togEl);
+          dirEl.appendChild(contEl);
+
+          place.appendChild(dirEl);
+        } else {
+          const fileEl = document.createElement("div");
+          fileEl.className = "file";
+          fileEl.textContent = val.name;
+
+          fileEl.addEventListener("click", () => {
+            navigator.clipboard.writeText(this.getStreamLink(val.id));
+
+            fileEl.textContent = "copied..";
+
+            setTimeout(() => {
+              fileEl.textContent = val.name;
+            }, 500);
+          });
+
+          place.appendChild(fileEl);
+        }
+      });
+    }
+
+    private getStreamLink(file_index: number): string {
+      return `${TORRSERVER_URL}/stream?link=${encodeURIComponent(this.magnet.value)}&index=${file_index}&play`;
+    }
+
+    private copyValue(e: Event) {
+      const targ = e.target as HTMLInputElement;
+      targ.select();
+      navigator.clipboard.writeText(targ.value);
+    }
+
+    constructor() {
+      this.self = document.getElementById("dialogInfo") as HTMLDialogElement;
+      this.name = document.getElementById("dialogName") as HTMLInputElement;
+      this.magnet = document.getElementById("dialogMagnet") as HTMLInputElement;
+      this.magnet.addEventListener("click", this.copyValue);
+      this.infohash = document.getElementById("dialogHash") as HTMLInputElement;
+      this.infohash.addEventListener("click", this.copyValue);
+      this.filesContainer = document.getElementById(
+        "dialogFiles"
+      ) as HTMLDivElement;
+    }
+  }
+
+  const dialog = new Dialog();
+
   document.getElementById("jackettLink")!.textContent = JACKETT_URL;
   document.getElementById("torrserverLink")!.textContent = TORRSERVER_URL;
 
@@ -150,13 +262,13 @@ document.addEventListener("DOMContentLoaded", function () {
     const query = (document.getElementById("searchQuery") as HTMLInputElement)
       .value;
     if (!query) {
-      alert("how can i find nothing?");
       return;
     }
 
     torrentResults.innerHTML = `
                     <div class="loading">
-                        <p>searching for "${query}"...</p>
+                      <div class="load-spinner"></div>
+                      <p>searching for "${query}"...</p>
                     </div>
                 `;
 
@@ -226,7 +338,9 @@ document.addEventListener("DOMContentLoaded", function () {
           <span style="text-align: right;">${result.createTime.toDateString()}</span>
         </div>`;
 
-      //torrElem.addEventListener("click", () => {});
+      torrElem.addEventListener("click", () => {
+        dialog.showTorrent(result.title, result.magnet);
+      });
 
       torrentResults.appendChild(torrElem);
     });
@@ -310,7 +424,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
   async function requestTorrAPI(
     magnet: string
-  ): Promise<Array<{ id: number; path: string; length: number }>> {
+  ): Promise<[string, Array<{ id: number; path: string }>]> {
     try {
       const encodedMagnet = encodeURIComponent(magnet);
 
@@ -324,23 +438,19 @@ document.addEventListener("DOMContentLoaded", function () {
         );
       }
 
-      return (await response.json()).file_stats;
+      const presp = await response.json();
+      return [presp.title, presp.file_stats];
     } catch (error) {
       console.error("error querying torrserver:", error);
       throw error;
     }
   }
 
-  function buildDirTorr(
-    inp: Array<{ id: number; path: string; length: number }>
-  ): TorrDirs {
+  function buildDirTorr(inp: Array<{ id: number; path: string }>): TorrDirs {
     const result: TorrDirs = [];
 
     inp.forEach((file) => {
-      const filePath = file.path.replace(/\\\//g, "ESCAPED_SLASH");
-      const parts = filePath
-        .split("/")
-        .map((a) => a.replace(/ESCAPED_SLASH/g, "/"));
+      const parts = file.path.split("/");
 
       if (parts.length == 1) {
         result.push({ id: file.id, name: parts[0] });
@@ -349,14 +459,13 @@ document.addEventListener("DOMContentLoaded", function () {
 
       let workingWith: TorrDirs = result;
       parts.forEach((part, index) => {
-        if (index != parts.length - 1) {
-          const found = workingWith.find((val) => {
-            if (Array.isArray(val)) {
-              return val[0] === part;
-            }
-          });
+        if (index !== parts.length - 1) {
+          const found = workingWith.find(
+            (val) =>
+              Array.isArray(val) && (val as [string, TorrDirs])[0] === part
+          );
 
-          if (found != undefined) {
+          if (found !== undefined) {
             workingWith = (found as [string, TorrDirs])[1];
           } else {
             workingWith = (
@@ -374,7 +483,8 @@ document.addEventListener("DOMContentLoaded", function () {
 
     function sortDirs(
       a: TorrFile | [string, TorrDirs],
-      b: TorrFile | [string, TorrDirs]
+      b: TorrFile | [string, TorrDirs],
+      sortedDirs: Set<TorrDirs>
     ): number {
       const aArr = Array.isArray(a);
       const bArr = Array.isArray(b);
@@ -383,33 +493,45 @@ document.addEventListener("DOMContentLoaded", function () {
       let bComp: string;
 
       if (aArr) {
-        (a as [string, TorrDirs])[1].sort(sortDirs);
+        if (!sortedDirs.has((a as [string, TorrDirs])[1])) {
+          (a as [string, TorrDirs])[1].sort((x, y) =>
+            sortDirs(x, y, sortedDirs)
+          );
+          sortedDirs.add((a as [string, TorrDirs])[1]);
+        }
         aComp = (a as [string, TorrDirs])[0];
       } else {
         aComp = (a as TorrFile).name;
       }
       if (bArr) {
-        (b as [string, TorrDirs])[1].sort(sortDirs);
+        if (!sortedDirs.has((b as [string, TorrDirs])[1])) {
+          (b as [string, TorrDirs])[1].sort((x, y) =>
+            sortDirs(x, y, sortedDirs)
+          );
+          sortedDirs.add((b as [string, TorrDirs])[1]);
+        }
         bComp = (b as [string, TorrDirs])[0];
       } else {
         bComp = (b as TorrFile).name;
       }
 
-      if (aArr == bArr) {
-        if (aComp < bComp) {
-          return -1;
-        }
-        if (aComp > bComp) {
-          return 1;
-        }
-        return 0;
+      if (aArr === bArr) {
+        return aComp < bComp ? -1 : 1;
       }
-      if (aArr) {
-        return -1;
-      }
-      return 1;
+      return aArr ? -1 : 1;
     }
 
-    return result.sort(sortDirs);
+    function simplify(arr: TorrDirs): TorrDirs {
+      if (arr.length === 1) {
+        const obj = arr[0];
+        if (Array.isArray(obj)) {
+          return simplify(obj[1]);
+        }
+      }
+      return arr;
+    }
+
+    const _reqSet: Set<TorrDirs> = new Set();
+    return simplify(result).sort((a, b) => sortDirs(a, b, _reqSet));
   }
 });
