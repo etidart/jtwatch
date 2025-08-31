@@ -542,20 +542,26 @@ document.addEventListener("DOMContentLoaded", function () {
         );
       }
 
-      return (
-        (await response.json()) as Array<{
-          tracker: string;
-          url: string;
-          title: string;
-          sizeName: string;
-          createTime: string;
-          sid: number;
-          pir: number;
-          magnet: string;
-          quality: number;
-          seasons: number[];
-        }>
-      )
+      const resp = (await response.json()) as
+        | Array<{
+            tracker: string;
+            url: string;
+            title: string;
+            sizeName: string;
+            createTime: string;
+            sid: number;
+            pir: number;
+            magnet: string;
+            quality: number;
+            seasons: number[];
+          }>
+        | {};
+
+      if (!Array.isArray(resp)) {
+        throw new Error("nothing found");
+      }
+
+      return resp
         .map(
           ({
             tracker,
