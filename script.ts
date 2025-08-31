@@ -251,6 +251,45 @@ document.addEventListener("DOMContentLoaded", function () {
 
   const dialog = new Dialog();
 
+  class AdditMenu {
+    private readonly input: HTMLInputElement;
+
+    constructor() {
+      const h2 = document.getElementById("additH2") as HTMLHeadingElement;
+      const form = document.getElementById("additMenu") as HTMLFormElement;
+      this.input = document.getElementById("magnetInput") as HTMLInputElement;
+      const button = document.getElementById(
+        "magnetButton"
+      ) as HTMLButtonElement;
+
+      h2.addEventListener("click", () => {
+        h2.classList.toggle("opened");
+        form.classList.toggle("hidden");
+        h2.textContent = h2.classList.contains("opened")
+          ? "▼ open known"
+          : "▶ open known";
+      });
+
+      button.addEventListener("click", () => {
+        if (this.input.value !== "") {
+          let magnet = this.input.value;
+          if (magnet.match(/^[0-9a-fA-F]{40}$/)) {
+            magnet = "magnet:?xt=urn:btih:" + magnet;
+          }
+
+          dialog.showTorrent("", magnet).catch(() => {
+            this.input.style.color = "red";
+            setTimeout(() => {
+              this.input.style.color = "var(--text-primary)";
+            }, 500);
+          });
+        }
+      });
+    }
+  }
+
+  const additmenu = new AdditMenu();
+
   document.getElementById("jackettLink")!.textContent = JACKETT_URL;
   document.getElementById("torrserverLink")!.textContent = TORRSERVER_URL;
 

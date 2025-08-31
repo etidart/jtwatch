@@ -1,4 +1,2 @@
-additionally, ability to manually enter infohash/magnet and open menu for that
-
 lastly searched string should be saved in cookies.
-lastly opened torrent's magnet link should be saved in cookies and automatically placed in l.1's input field.
+lastly opened torrent's magnet link should be saved in cookies and automatically placed in corresponding input field.

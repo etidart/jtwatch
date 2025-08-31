@@ -30,14 +30,32 @@
       </div>
 
       <div class="card">
+        <h2 id="additH2" class="card-title">▶ open known</h2>
+        <form method="dialog" id="additMenu" class="hidden">
+          <div class="form-group">
+            <label for="magnetInput">magnet link / infohash</label>
+            <input
+              type="text"
+              id="magnetInput"
+              placeholder="magnet:?xt=urn:btih:????? / ?????"
+              spellcheck="false"
+              required
+            />
+          </div>
+          <button class="submit-button" id="magnetButton">open</button>
+        </form>
+      </div>
+
+      <div class="card">
         <form method="dialog">
-          <h2 class="card-title">search</h2>
+          <h2 class="card-title opened">search</h2>
           <div class="form-group">
             <label for="searchQuery">query</label>
             <input
               type="text"
               id="searchQuery"
               placeholder="name / kpXXXXXX / ttXXXXXX"
+              spellcheck="false"
               required
             />
             <div class="addit-options">
@@ -92,7 +110,7 @@
               </div>
             </div>
           </div>
-          <button id="searchButton">search</button>
+          <button class="submit-button" id="searchButton">search</button>
         </form>
       </div>
 
