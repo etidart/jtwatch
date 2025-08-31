@@ -27,6 +27,68 @@ document.addEventListener("DOMContentLoaded", function () {
 
   type TorrDirs = Array<TorrFile | [string, TorrDirs]>;
 
+  document.getElementById("jackettLink")!.textContent = JACKETT_URL;
+  document.getElementById("torrserverLink")!.textContent = TORRSERVER_URL;
+
+  document.getElementById("searchButton")!.addEventListener("click", () => {
+    const query = searchQueryInput.value;
+    persist.setSearch(query);
+    if (!query) {
+      return;
+    }
+
+    torrentResults.innerHTML = `
+                    <div class="loading">
+                      <div class="load-spinner"></div>
+                      <p>searching for "${query}"...</p>
+                    </div>
+                `;
+
+    document.getElementById("resultsCard")!.classList.remove("hidden");
+
+    searchDisplay(query);
+  });
+
+  const torrentResults = document.getElementById(
+    "torrentResults"
+  ) as HTMLDivElement;
+
+  const searchQueryInput = document.getElementById(
+    "searchQuery"
+  ) as HTMLInputElement;
+
+  const magnetLinkInput = document.getElementById(
+    "magnetInput"
+  ) as HTMLInputElement;
+
+  class Persistence {
+    private readonly LASTSEARCH = "last_search";
+    private readonly LASTMAGNET = "last_magnet";
+
+    public setMagnet(magnet: string): void {
+      localStorage.setItem(this.LASTMAGNET, magnet);
+      magnetLinkInput.value = magnet;
+    }
+
+    public setSearch(query: string): void {
+      localStorage.setItem(this.LASTSEARCH, query);
+    }
+
+    constructor() {
+      if (localStorage.getItem(this.LASTSEARCH) === null) {
+        localStorage.setItem(this.LASTSEARCH, "");
+      }
+      if (localStorage.getItem(this.LASTMAGNET) === null) {
+        localStorage.setItem(this.LASTMAGNET, "");
+      }
+
+      searchQueryInput.value = localStorage.getItem(this.LASTSEARCH) as string;
+      magnetLinkInput.value = localStorage.getItem(this.LASTMAGNET) as string;
+    }
+  }
+
+  const persist = new Persistence();
+
   class Filters {
     private static DoubleRange = class {
       private parent: Filters;
@@ -170,7 +232,7 @@ document.addEventListener("DOMContentLoaded", function () {
         if (name === "") {
           this.name.value = apiresp[0];
         }
-        this.drawInfo(buildDirTorr(apiresp[1]), this.filesContainer);
+        this.drawInfo(this.buildDirTorr(apiresp[1]), this.filesContainer);
       } catch (error) {
         console.error(error);
         this.filesContainer.innerHTML = `<div class="loading">
@@ -236,6 +298,95 @@ document.addEventListener("DOMContentLoaded", function () {
       navigator.clipboard.writeText(targ.value);
     }
 
+    private buildDirTorr(inp: Array<{ id: number; path: string }>): TorrDirs {
+      const result: TorrDirs = [];
+
+      inp.forEach((file) => {
+        const parts = file.path.split("/");
+
+        if (parts.length == 1) {
+          result.push({ id: file.id, name: parts[0] });
+          return;
+        }
+
+        let workingWith: TorrDirs = result;
+        parts.forEach((part, index) => {
+          if (index !== parts.length - 1) {
+            const found = workingWith.find(
+              (val) =>
+                Array.isArray(val) && (val as [string, TorrDirs])[0] === part
+            );
+
+            if (found !== undefined) {
+              workingWith = (found as [string, TorrDirs])[1];
+            } else {
+              workingWith = (
+                workingWith[workingWith.push([part, []]) - 1] as [
+                  string,
+                  TorrDirs
+                ]
+              )[1];
+            }
+          } else {
+            workingWith.push({ id: file.id, name: part });
+          }
+        });
+      });
+
+      function sortDirs(
+        a: TorrFile | [string, TorrDirs],
+        b: TorrFile | [string, TorrDirs],
+        sortedDirs: Set<TorrDirs>
+      ): number {
+        const aArr = Array.isArray(a);
+        const bArr = Array.isArray(b);
+
+        let aComp: string;
+        let bComp: string;
+
+        if (aArr) {
+          if (!sortedDirs.has((a as [string, TorrDirs])[1])) {
+            (a as [string, TorrDirs])[1].sort((x, y) =>
+              sortDirs(x, y, sortedDirs)
+            );
+            sortedDirs.add((a as [string, TorrDirs])[1]);
+          }
+          aComp = (a as [string, TorrDirs])[0];
+        } else {
+          aComp = (a as TorrFile).name;
+        }
+        if (bArr) {
+          if (!sortedDirs.has((b as [string, TorrDirs])[1])) {
+            (b as [string, TorrDirs])[1].sort((x, y) =>
+              sortDirs(x, y, sortedDirs)
+            );
+            sortedDirs.add((b as [string, TorrDirs])[1]);
+          }
+          bComp = (b as [string, TorrDirs])[0];
+        } else {
+          bComp = (b as TorrFile).name;
+        }
+
+        if (aArr === bArr) {
+          return aComp < bComp ? -1 : 1;
+        }
+        return aArr ? -1 : 1;
+      }
+
+      function simplify(arr: TorrDirs): TorrDirs {
+        if (arr.length === 1) {
+          const obj = arr[0];
+          if (Array.isArray(obj)) {
+            return simplify(obj[1]);
+          }
+        }
+        return arr;
+      }
+
+      const _reqSet: Set<TorrDirs> = new Set();
+      return simplify(result).sort((a, b) => sortDirs(a, b, _reqSet));
+    }
+
     constructor() {
       this.self = document.getElementById("dialogInfo") as HTMLDialogElement;
       this.name = document.getElementById("dialogName") as HTMLInputElement;
@@ -251,70 +402,45 @@ document.addEventListener("DOMContentLoaded", function () {
 
   const dialog = new Dialog();
 
-  class AdditMenu {
-    private readonly input: HTMLInputElement;
+  function setupAdditMenu() {
+    const h2 = document.getElementById("additH2") as HTMLHeadingElement;
+    const form = document.getElementById("additMenu") as HTMLFormElement;
+    const input = magnetLinkInput;
+    const button = document.getElementById("magnetButton") as HTMLButtonElement;
 
-    constructor() {
-      const h2 = document.getElementById("additH2") as HTMLHeadingElement;
-      const form = document.getElementById("additMenu") as HTMLFormElement;
-      this.input = document.getElementById("magnetInput") as HTMLInputElement;
-      const button = document.getElementById(
-        "magnetButton"
-      ) as HTMLButtonElement;
+    h2.addEventListener("click", () => {
+      h2.classList.toggle("opened");
+      form.classList.toggle("hidden");
+      h2.textContent = h2.classList.contains("opened")
+        ? "▼ open known"
+        : "▶ open known";
+    });
 
-      h2.addEventListener("click", () => {
-        h2.classList.toggle("opened");
-        form.classList.toggle("hidden");
-        h2.textContent = h2.classList.contains("opened")
-          ? "▼ open known"
-          : "▶ open known";
-      });
+    button.addEventListener("click", () => {
+      let magnet = input.value;
+      if (magnet === "") {
+        persist.setMagnet(magnet);
+        return;
+      }
+      if (magnet.match(/^[0-9a-fA-F]{40}$/)) {
+        magnet = "magnet:?xt=urn:btih:" + magnet;
+      }
 
-      button.addEventListener("click", () => {
-        if (this.input.value !== "") {
-          let magnet = this.input.value;
-          if (magnet.match(/^[0-9a-fA-F]{40}$/)) {
-            magnet = "magnet:?xt=urn:btih:" + magnet;
-          }
-
-          dialog.showTorrent("", magnet).catch(() => {
-            this.input.style.color = "red";
-            setTimeout(() => {
-              this.input.style.color = "var(--text-primary)";
-            }, 500);
-          });
+      dialog.showTorrent("", magnet).then(
+        () => {
+          persist.setMagnet(magnet);
+        },
+        () => {
+          input.style.color = "red";
+          setTimeout(() => {
+            input.style.color = "var(--text-primary)";
+          }, 500);
         }
-      });
-    }
+      );
+    });
   }
 
-  const additmenu = new AdditMenu();
-
-  document.getElementById("jackettLink")!.textContent = JACKETT_URL;
-  document.getElementById("torrserverLink")!.textContent = TORRSERVER_URL;
-
-  const searchButton = document.getElementById("searchButton")!;
-  const resultsCard = document.getElementById("resultsCard")!;
-  const torrentResults = document.getElementById("torrentResults")!;
-
-  searchButton.addEventListener("click", () => {
-    const query = (document.getElementById("searchQuery") as HTMLInputElement)
-      .value;
-    if (!query) {
-      return;
-    }
-
-    torrentResults.innerHTML = `
-                    <div class="loading">
-                      <div class="load-spinner"></div>
-                      <p>searching for "${query}"...</p>
-                    </div>
-                `;
-
-    resultsCard.classList.remove("hidden");
-
-    searchDisplay(query);
-  });
+  setupAdditMenu();
 
   checkAPI("jackettStatus", requestJackAPI, JACKETT_TESTSTR);
   checkAPI("torrserverStatus", requestTorrAPI, TORRSERVER_TESTSTR);
@@ -379,6 +505,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
       torrElem.addEventListener("click", () => {
         dialog.showTorrent(result.title, result.magnet);
+        persist.setMagnet(result.magnet);
       });
 
       torrentResults.appendChild(torrElem);
@@ -483,94 +610,5 @@ document.addEventListener("DOMContentLoaded", function () {
       console.error("error querying torrserver:", error);
       throw error;
     }
-  }
-
-  function buildDirTorr(inp: Array<{ id: number; path: string }>): TorrDirs {
-    const result: TorrDirs = [];
-
-    inp.forEach((file) => {
-      const parts = file.path.split("/");
-
-      if (parts.length == 1) {
-        result.push({ id: file.id, name: parts[0] });
-        return;
-      }
-
-      let workingWith: TorrDirs = result;
-      parts.forEach((part, index) => {
-        if (index !== parts.length - 1) {
-          const found = workingWith.find(
-            (val) =>
-              Array.isArray(val) && (val as [string, TorrDirs])[0] === part
-          );
-
-          if (found !== undefined) {
-            workingWith = (found as [string, TorrDirs])[1];
-          } else {
-            workingWith = (
-              workingWith[workingWith.push([part, []]) - 1] as [
-                string,
-                TorrDirs
-              ]
-            )[1];
-          }
-        } else {
-          workingWith.push({ id: file.id, name: part });
-        }
-      });
-    });
-
-    function sortDirs(
-      a: TorrFile | [string, TorrDirs],
-      b: TorrFile | [string, TorrDirs],
-      sortedDirs: Set<TorrDirs>
-    ): number {
-      const aArr = Array.isArray(a);
-      const bArr = Array.isArray(b);
-
-      let aComp: string;
-      let bComp: string;
-
-      if (aArr) {
-        if (!sortedDirs.has((a as [string, TorrDirs])[1])) {
-          (a as [string, TorrDirs])[1].sort((x, y) =>
-            sortDirs(x, y, sortedDirs)
-          );
-          sortedDirs.add((a as [string, TorrDirs])[1]);
-        }
-        aComp = (a as [string, TorrDirs])[0];
-      } else {
-        aComp = (a as TorrFile).name;
-      }
-      if (bArr) {
-        if (!sortedDirs.has((b as [string, TorrDirs])[1])) {
-          (b as [string, TorrDirs])[1].sort((x, y) =>
-            sortDirs(x, y, sortedDirs)
-          );
-          sortedDirs.add((b as [string, TorrDirs])[1]);
-        }
-        bComp = (b as [string, TorrDirs])[0];
-      } else {
-        bComp = (b as TorrFile).name;
-      }
-
-      if (aArr === bArr) {
-        return aComp < bComp ? -1 : 1;
-      }
-      return aArr ? -1 : 1;
-    }
-
-    function simplify(arr: TorrDirs): TorrDirs {
-      if (arr.length === 1) {
-        const obj = arr[0];
-        if (Array.isArray(obj)) {
-          return simplify(obj[1]);
-        }
-      }
-      return arr;
-    }
-
-    const _reqSet: Set<TorrDirs> = new Set();
-    return simplify(result).sort((a, b) => sortDirs(a, b, _reqSet));
   }
 });
