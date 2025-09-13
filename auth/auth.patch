@@ -1,0 +1,42 @@
+diff --git a/script.ts b/script.ts
+index aaeed55..38365e8 100644
+--- a/script.ts
++++ b/script.ts
+@@ -3,6 +3,19 @@ document.addEventListener("DOMContentLoaded", function () {
+   const JACKETT_API_KEY = "null";
+   const TORRSERVER_URL = "http://localhost:8090";
+ 
++  function getCookie(name: string): string {
++    let matches = document.cookie.match(
++      new RegExp(
++        "(?:^|; )" +
++          name.replace(/([\.$?*|{}\(\)\[\]\\\/\+^])/g, "\\$1") +
++          "=([^;]*)"
++      )
++    );
++    return matches ? matches[1] : "null";
++  }
++
++  const TORRSERVER_API_KEY = getCookie("passkey");
++
+   const JACKETT_TESTSTR = "venom";
+   const TORRSERVER_TESTSTR =
+     "magnet:?xt=urn:btih:a1dfefec1a9dd7fa8a041ebeeea271db55126d2f&tr=https%3A%2F%2Ftorrent.ubuntu.com%2Fannounce";
+@@ -289,7 +302,7 @@ document.addEventListener("DOMContentLoaded", function () {
+     }
+ 
+     private getStreamLink(file_index: number): string {
+-      return `${TORRSERVER_URL}/stream?link=${encodeURIComponent(this.magnet.value)}&index=${file_index}&play`;
++      return `${TORRSERVER_URL}/stream?link=${encodeURIComponent(this.magnet.value)}&index=${file_index}&play&passkey=${TORRSERVER_API_KEY}`;
+     }
+ 
+     private copyValue(e: Event) {
+@@ -601,7 +614,7 @@ document.addEventListener("DOMContentLoaded", function () {
+       const encodedMagnet = encodeURIComponent(magnet);
+ 
+       const response = await fetch(
+-        `${TORRSERVER_URL}/stream?link=${encodedMagnet}&stat`
++        `${TORRSERVER_URL}/stream?link=${encodedMagnet}&stat&passkey=${TORRSERVER_API_KEY}`
+       );
+ 
+       if (!response.ok) {

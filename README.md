@@ -15,6 +15,8 @@ deploy index.html, style.css, (compiled) script.js.
 
 note that a copy of the license and copyright notice must be included with the licensed material.
 
+for torrserver auth support (recommended when you are deploying torrserver) see `./auth/README.md`
+
 ### license
 
 MIT License
