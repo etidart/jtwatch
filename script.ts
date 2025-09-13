@@ -251,7 +251,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
           const togEl = document.createElement("span");
           togEl.className = "toggle";
-          togEl.textContent = `▶ ${val[0]}`;
+          togEl.textContent = `> ${val[0]}`;
 
           const contEl = document.createElement("div");
           contEl.className = "hidden";
@@ -260,8 +260,8 @@ document.addEventListener("DOMContentLoaded", function () {
           togEl.addEventListener("click", () => {
             contEl.classList.toggle("hidden");
             togEl.textContent = contEl.classList.contains("hidden")
-              ? `▶ ${val[0]}`
-              : `▼ ${val[0]}`;
+              ? `> ${val[0]}`
+              : `v ${val[0]}`;
           });
 
           dirEl.appendChild(togEl);
@@ -412,8 +412,8 @@ document.addEventListener("DOMContentLoaded", function () {
       h2.classList.toggle("opened");
       form.classList.toggle("hidden");
       h2.textContent = h2.classList.contains("opened")
-        ? "▼ open known"
-        : "▶ open known";
+        ? "v open known"
+        : "> open known";
     });
 
     button.addEventListener("click", () => {

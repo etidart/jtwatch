@@ -36,7 +36,9 @@ body {
   width: 100%;
   max-width: 1200px;
   margin: 0 auto;
-  padding: 20px;
+  padding: 0px;
+  padding-left: 20px;
+  padding-right: 20px;
 }
 
 header {
@@ -64,6 +66,7 @@ header {
   background: var(--card-bg);
   border-radius: var(--border-radius);
   padding: 20px;
+  margin-top: 20px;
   margin-bottom: 20px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
   transition: var(--transition);
@@ -228,9 +231,8 @@ span:nth-child(5) {
 
 .status-info {
   padding: 10px;
-  background: var(--card-bg);
-  border-radius: var(--border-radius);
-  margin-bottom: 15px;
+  padding-left: 20px;
+  padding-right: 20px;
   font-size: 0.9rem;
   color: var(--text-secondary);
 }
@@ -321,7 +323,7 @@ span:nth-child(5) {
   color: white;
 }
 
-option {
+.tickmarks div {
   position: relative;
   padding-top: 1px;
   padding-left: 0px;
@@ -329,7 +331,7 @@ option {
   font-size: 14px;
 }
 
-option::after {
+.tickmarks div::after {
   content: "";
   display: initial;
   position: absolute;
@@ -451,10 +453,19 @@ body:has(dialog[open]) {
     grid-template-columns: 1fr;
   }
 
-  /*.torrent-details {
-    flex-direction: column;
-    gap: 5px;
-  }*/
+  .container {
+    padding-left: 0;
+    padding-right: 0;
+  }
+
+  .card {
+    border-radius: 8px;
+  }
+
+  dialog {
+    width: 100%;
+    border-radius: 8px;
+  }
 }
 
 @keyframes fadeIn {
